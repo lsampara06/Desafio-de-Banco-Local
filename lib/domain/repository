@@ -1,0 +1,57 @@
+import 'package:hive/hive.dart';
+import '../../data/models/sheep_model.dart';
+import '../../data/datasource/sheep_datasource.dart'; // Assumindo a implementação
+
+// Interface para o Repositório
+abstract class SheepRepository {
+  ValueListenable<Box<SheepModel>> get listenable;
+  List<SheepModel> get allSheeps;
+  Future<void> saveSheep(SheepModel sheep); // Upsert [cite: 27, 52]
+}
+
+// Implementação do Repositório (camada do meio) [cite: 29, 39]
+class SheepRepositoryImpl implements SheepRepository {
+  final SheepDataSource _dataSource;
+
+  SheepRepositoryImpl(this._dataSource);
+
+  // Getter para a lista reativa [cite: 33, 52]
+  @override
+  ValueListenable<Box<SheepModel>> get listenable => _dataSource.sheepBox.listenable();
+
+  // Getter para todas as ovelhas, ordenadas por RFID (a chave da Box) [cite: 8, 32, 52]
+  @override
+  List<SheepModel> get allSheeps {
+    final sheeps = _dataSource.sheepBox.values.toList();
+    // Ordenação por RFID String (a chave é o RFID)
+    sheeps.sort((a, b) => a.rfidOvelha.compareTo(b.rfidOvelha));
+    return sheeps;
+  }
+
+  // Persistência (upsert), a chave é o rfidOvelha [cite: 27, 32, 52]
+  @override
+  Future<void> saveSheep(SheepModel sheep) async {
+    // put(key, value) com key = rfidOvelha [cite: 52]
+    return _dataSource.sheepBox.put(sheep.rfidOvelha, sheep);
+  }
+}
+
+// Classe de injeção de dependência/inicialização do Hive
+class ServiceLocator {
+  static late SheepRepository sheepRepository;
+
+  static Future<void> initialize() async {
+    // 1. Inicializa o Hive [cite: 31, 51]
+    await Hive.initFlutter();
+
+    // 2. Registra o TypeAdapter manual [cite: 31, 51]
+    Hive.registerAdapter(SheepAdapter());
+
+    // 3. Abre a Box [cite: 31, 51]
+    final sheepBox = await Hive.openBox<SheepModel>('sheeps');
+
+    // 4. Cria o DataSource e o Repository
+    final dataSource = SheepDataSource(sheepBox);
+    sheepRepository = SheepRepositoryImpl(dataSource);
+  }
+}

@@ -1,0 +1,35 @@
+import 'package:flutter/services.dart';
+
+// Implementação própria do TextInputFormatter [cite: 22, 52]
+class RfidTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String newText = newValue.text.replaceAll('-', ''); // Remove o hífen para processar
+
+    // Máximo de 18 dígitos: 3 para o prefixo e 15 para o número [cite: 16]
+    if (newText.length > 18) {
+      newText = newText.substring(0, 18);
+    }
+
+    String maskedText = '';
+    
+    // Adiciona o prefixo (999)
+    if (newText.length > 0) {
+      maskedText += newText.substring(0, newText.length > 3 ? 3 : newText.length);
+    }
+
+    // Adiciona o hífen [cite: 16]
+    if (newText.length > 3) {
+      maskedText += '-';
+      maskedText += newText.substring(3);
+    }
+    
+    return TextEditingValue(
+      text: maskedText,
+      selection: TextSelection.collapsed(offset: maskedText.length),
+    );
+  }
+}

@@ -1,0 +1,96 @@
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../data/models/sheep_model.dart';
+import '../../domain/repository/sheep_repository.dart';
+import 'edit_sheep_screen.dart';
+
+class HerdScreen extends StatelessWidget {
+  const HerdScreen({super.key});
+
+  // Acesso ao repositório via ServiceLocator
+  SheepRepository get _repository => ServiceLocator.sheepRepository;
+
+  void _navigateToAddEdit(BuildContext context, {SheepModel? sheep}) async {
+    // Navegação por Navigator.push para Inclusão/Edição [cite: 9, 10, 40]
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditSheepScreen(
+          initialSheep: sheep,
+        ),
+      ),
+    );
+
+    // Se a alteração foi salva (result == true), a lista já é atualizada reativamente
+    // graças ao ValueListenableBuilder[cite: 11, 33].
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sheep == null ? 'Ovelha adicionada com sucesso!' : 'Ovelha editada com sucesso!'),
+        ),
+      );
+    }
+  }
+
+  void _closeApp() {
+    // Fechar app: SystemNavigator.pop() [cite: 12, 52]
+    SystemNavigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Rebanho (Hive)'), // Título [cite: 1]
+        centerTitle: true,
+      ),
+      // Uso do ValueListenableBuilder para listagem reativa [cite: 33, 52]
+      body: ValueListenableBuilder<Box<SheepModel>>(
+        valueListenable: _repository.listenable,
+        builder: (context, box, _) {
+          // A ordenação por RFID é feita dentro do getter allSheeps do Repository 
+          final sheeps = _repository.allSheeps;
+
+          if (sheeps.isEmpty) {
+            return const Center(child: Text('Nenhuma ovelha cadastrada.'));
+          }
+
+          return ListView.separated(
+            itemCount: sheeps.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final sheep = sheeps[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  child: Text(sheep.idadeOvelha.toString()), // Exibindo idade
+                ),
+                title: Text('# ${sheep.rfidOvelha} - ${sheep.racaOvelha}'),
+                subtitle: Text('Vacinada: ${sheep.indVacinada ? 'Sim' : 'Não'}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _navigateToAddEdit(context, sheep: sheep), // Abrir Edição [cite: 10]
+                ),
+              );
+            },
+          );
+        },
+      ),
+      // Rodapé com botões de ação
+      persistentFooterButtons: [
+        // Botão para Fechar o Aplicativo [cite: 12, 52]
+        TextButton.icon(
+          onPressed: _closeApp,
+          icon: const Icon(Icons.exit_to_app),
+          label: const Text('Fechar aplicativo'),
+        ),
+        const Spacer(),
+        // Botão para Adicionar [cite: 9]
+        ElevatedButton.icon(
+          onPressed: () => _navigateToAddEdit(context), // Abrir Inclusão [cite: 9]
+          icon: const Icon(Icons.add),
+          label: const Text('Adicionar'),
+        ),
+      ],
+    );
+  }
+}

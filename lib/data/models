@@ -1,0 +1,68 @@
+import 'package:hive/hive.dart';
+
+// O TypeId é obrigatório para registrar o Adapter no Hive [cite: 52]
+const int sheepModelTypeId = 0;
+
+// O TypeAdapter manual (sem build_runner) 
+class SheepAdapter extends TypeAdapter<SheepModel> {
+  @override
+  final int typeId = sheepModelTypeId;
+
+  @override
+  SheepModel read(BinaryReader reader) {
+    // A ordem deve ser consistente [cite: 51]
+    final rfid = reader.readString();
+    final race = reader.readString();
+    final age = reader.readInt();
+    final isVaccinated = reader.readBool();
+    
+    return SheepModel(
+      rfidOvelha: rfid,
+      racaOvelha: race,
+      idadeOvelha: age,
+      indVacinada: isVaccinated,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, SheepModel obj) {
+    // A ordem deve ser consistente [cite: 51]
+    writer.writeString(obj.rfidOvelha);
+    writer.writeString(obj.racaOvelha);
+    writer.writeInt(obj.idadeOvelha);
+    writer.writeBool(obj.indVacinada);
+  }
+}
+
+// O Modelo de Dados [cite: 15]
+class SheepModel {
+  final String rfidOvelha; // Chave da Box [cite: 32]
+  final String racaOvelha; // Santa Inês, Dorper, Texel [cite: 17]
+  final int idadeOvelha; // >= 0 [cite: 19, 25]
+  final bool indVacinada; // bool (liga/desliga) [cite: 20, 26]
+
+  SheepModel({
+    required this.rfidOvelha,
+    required this.racaOvelha,
+    required this.idadeOvelha,
+    required this.indVacinada,
+  });
+
+  // Lista de raças para uso no formulário [cite: 17]
+  static const List<String> availableRaces = ['Santa Inês', 'Dorper', 'Texel'];
+
+  // Função para criar uma cópia e facilitar a edição
+  SheepModel copyWith({
+    String? rfidOvelha,
+    String? racaOvelha,
+    int? idadeOvelha,
+    bool? indVacinada,
+  }) {
+    return SheepModel(
+      rfidOvelha: rfidOvelha ?? this.rfidOvelha,
+      racaOvelha: racaOvelha ?? this.racaOvelha,
+      idadeOvelha: idadeOvelha ?? this.idadeOvelha,
+      indVacinada: indVacinada ?? this.indVacinada,
+    );
+  }
+}

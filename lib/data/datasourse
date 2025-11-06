@@ -1,0 +1,12 @@
+import 'package:hive/hive.dart';
+import '../models/sheep_model.dart';
+
+// Camada de acesso direto aos dados (Hive) [cite: 29, 39]
+class SheepDataSource {
+  final Box<SheepModel> sheepBox;
+
+  SheepDataSource(this.sheepBox);
+  
+  // As funções de read/write são delegadas ao Repository para simplificar
+  // mas a Box fica visível para o Repository usar put() e listenable().
+}
